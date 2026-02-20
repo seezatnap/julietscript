@@ -15,8 +15,9 @@ VS Code extension for JulietScript language support:
 ### Option 1: Run as an extension in development
 
 1. Open this folder in VS Code.
-2. Open `Run and Debug` and run `Extension` (or press `F5`).
-3. In the new Extension Development Host window, open a `.julietscript`, `.jls`, or `.juliet` file.
+2. Open `Run and Debug` and choose `Run JulietScript Extension`, then press `F5`.
+3. If prompted to select a debug environment, choose `VS Code Extension Development`.
+4. In the new Extension Development Host window, open a `.julietscript`, `.jls`, or `.juliet` file.
 
 ### Option 2: Package and install as a normal extension
 
