@@ -1,25 +1,87 @@
-# JulietScript VS Code Extension
+# JulietScript
 
-VS Code extension for JulietScript language support:
+JulietScript is the script language used in conjunction with [seezatnap/juliet](https://github.com/seezatnap/juliet), a CLI for orchestrating coding workflows. This repository is a supporting JulietScript library/tooling repo: it documents the language, provides syntax/lint support, and includes editor integration.
 
-- Syntax highlighting
+## Reference Syntax (Annotated)
+
+```julietscript
+# 1) Global project settings for the run context.
+juliet {
+  engine = gpt5;
+  project = "Q2 launch memo";
+  language = "en";
+}
+
+# 2) Reusable policies are named prompt bodies.
+policy Preflight = """
+Check for factual errors, unsupported claims, and missing constraints.
+Return short, explicit fixes.
+""";
+
+policy Triage = "Prioritize correctness issues first, then clarity.";
+
+# 3) Rubrics define scoring criteria and optional tiebreakers.
+rubric MemoRubric {
+  criterion "Accuracy" points 5;
+  criterion "Clarity" points 3;
+  criterion "Actionability" points 2;
+  tiebreakers ["Accuracy", "Clarity"];
+}
+
+# 4) Cadence controls iteration behavior.
+cadence MemoLoop {
+  engine = "gpt-5";
+  variants = 4;
+  sprints = 2;
+  compare using MemoRubric;
+  keep best;
+  discard rest;
+}
+
+# 5) Create produces an artifact from a prompt and named attachments.
+create LaunchMemo from juliet "Write a one-page launch memo for the Q2 release."
+with {
+  preflight = Preflight;  # policy
+  triage = Triage;        # policy
+  cadence = MemoLoop;     # cadence
+  rubric = MemoRubric;    # rubric
+};
+
+# 6) Extend currently targets '<Artifact>.rubric' with extra guidance.
+extend LaunchMemo.rubric with "Add a criterion for risk disclosure quality.";
+
+# 7) Halt can stop execution, optionally with a message.
+halt "Stop after the first accepted memo.";
+```
+
+## Repository Scope
+
+This repository is a supporting library/tooling home for JulietScript scripts used by [seezatnap/juliet](https://github.com/seezatnap/juliet).
+The VS Code extension is only one part of this repo, not the whole project.
+
+Current implementation in this repo includes:
+
+- Syntax grammar for `.julietscript`, `.jls`, `.juliet`
 - Parser-backed lint diagnostics
+- VS Code diagnostics integration
 
-## Requirements
+## VS Code Extension
+
+### Requirements
 
 - VS Code `1.90.0` or newer
 - Node.js `18+` (for running tests/packaging)
 
-## Installation
+### Installation
 
-### Option 1: Run as an extension in development
+#### Option 1: Run as an extension in development
 
 1. Open this folder in VS Code.
 2. Open `Run and Debug` and choose `Run JulietScript Extension`, then press `F5`.
 3. If prompted to select a debug environment, choose `VS Code Extension Development`.
 4. In the new Extension Development Host window, open a `.julietscript`, `.jls`, or `.juliet` file.
 
-### Option 2: Package and install as a normal extension
+#### Option 2: Package and install as a normal extension
 
 1. Install the VS Code extension packager:
    ```bash
@@ -34,7 +96,7 @@ VS Code extension for JulietScript language support:
    code --install-extension julietscript-vscode-0.0.1.vsix
    ```
 
-## What it adds
+## What It Adds
 
 - Language id: `julietscript`
 - File extensions: `.julietscript`, `.jls`, `.juliet`
@@ -43,7 +105,7 @@ VS Code extension for JulietScript language support:
 - Linter engine: `src/linter.js`
 - VS Code diagnostics wiring: `src/extension.js`
 
-## Linter checks
+## Linter Checks
 
 - Statement parsing for `juliet`, `policy`, `rubric`, `cadence`, `create`, `extend`, `halt`
 - Invalid/unknown keys in `juliet { ... }` and `create ... with { ... }`
