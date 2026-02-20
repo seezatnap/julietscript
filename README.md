@@ -7,9 +7,8 @@ JulietScript is the script language used in conjunction with [seezatnap/juliet](
 ```julietscript
 # 1) Global project settings for the run context.
 juliet {
-  engine = gpt5;
+  engine = codex;
   project = "Q2 launch memo";
-  language = "en";
 }
 
 # 2) Reusable policies are named prompt bodies.
@@ -30,7 +29,7 @@ rubric MemoRubric {
 
 # 4) Cadence controls iteration behavior.
 cadence MemoLoop {
-  engine = "gpt-5";
+  engine = codex;
   variants = 4;
   sprints = 2;
   compare using MemoRubric;

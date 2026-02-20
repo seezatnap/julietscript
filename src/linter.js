@@ -15,7 +15,7 @@ const TOP_LEVEL_KEYWORDS = new Set([
   "halt"
 ]);
 
-const JULIET_ALLOWED_KEYS = new Set(["engine", "project", "language"]);
+const JULIET_ALLOWED_KEYS = new Set(["engine", "project"]);
 const CREATE_ALLOWED_KEYS = new Map([
   ["preflight", "policy"],
   ["triage", "policy"],
@@ -330,7 +330,7 @@ class Parser {
       }
 
       if (!JULIET_ALLOWED_KEYS.has(key.value)) {
-        this.reportToken(key, `Unknown juliet key '${key.value}'. Supported keys: engine, project, language.`, SEVERITY.WARNING);
+        this.reportToken(key, `Unknown juliet key '${key.value}'. Supported keys: engine, project.`, SEVERITY.WARNING);
       }
 
       this.expect("=", "Expected '=' after juliet key.");

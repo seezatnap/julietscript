@@ -18,7 +18,6 @@ const tests = [
 juliet {
   engine = codex;
   project = "division-challenge";
-  language = "en";
 }
 
 policy failureTriage = """
@@ -61,6 +60,20 @@ halt "Human review checkpoint.";
     validate: (diagnostics) => {
       assert.strictEqual(countBySeverity(diagnostics, SEVERITY.ERROR), 0);
       assert.strictEqual(countBySeverity(diagnostics, SEVERITY.WARNING), 0);
+    }
+  },
+  {
+    name: "reports unsupported juliet language config key",
+    source: `
+juliet {
+  engine = codex;
+  project = "x";
+  language = "en";
+}
+`,
+    validate: (diagnostics) => {
+      const warningMessages = messages(diagnostics).join("\n");
+      assert.match(warningMessages, /Unknown juliet key 'language'/);
     }
   },
   {
