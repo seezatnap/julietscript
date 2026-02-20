@@ -8,7 +8,7 @@ JulietScript is the script language used in conjunction with [seezatnap/juliet](
 # 1) Global project settings for the run context.
 juliet {
   engine = codex;
-  project = "Q2 launch memo";
+  project = "q2-launch-memo";
 }
 
 # 2) Reusable policies are named prompt bodies.
@@ -53,6 +53,7 @@ halt "Stop after the first accepted memo.";
 ```
 
 `keep best <int>;` sets the survivor cap per sprint.
+`project` names should use only letters, numbers, `-`, and `_` (no spaces).
 
 - Round 1: `variants = 4` creates 4 branches, then `keep best 2` keeps 2.
 - Round 2: 2 survivors each branch into 4 variants (`2 x 4 = 8`), then keep 2.

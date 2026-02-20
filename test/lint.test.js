@@ -63,6 +63,19 @@ halt "Human review checkpoint.";
     }
   },
   {
+    name: "reports invalid project name format",
+    source: `
+juliet {
+  engine = codex;
+  project = "Q2 launch memo";
+}
+`,
+    validate: (diagnostics) => {
+      const errorMessages = messages(diagnostics).join("\n");
+      assert.match(errorMessages, /Project value must use only letters, numbers, '-' or '_' \(no spaces\)/);
+    }
+  },
+  {
     name: "reports unsupported juliet language config key",
     source: `
 juliet {

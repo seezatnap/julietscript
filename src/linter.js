@@ -334,7 +334,11 @@ class Parser {
       }
 
       this.expect("=", "Expected '=' after juliet key.");
-      this.expectValue("Expected a value after '='.");
+      if (key.value === "project") {
+        this.expectProjectValue();
+      } else {
+        this.expectValue("Expected a value after '='.");
+      }
       this.expect(";", "Expected ';' after juliet assignment.");
     }
     this.expect("}", "Expected '}' to close juliet block.");
@@ -619,6 +623,22 @@ class Parser {
       return;
     }
     this.reportCurrent("Expected engine value as an identifier or quoted string.", SEVERITY.ERROR);
+  }
+
+  expectProjectValue() {
+    if (!(this.check("identifier") || this.check("string"))) {
+      this.reportCurrent(
+        "Expected project value as an identifier or quoted string using only letters, numbers, '-' or '_'.",
+        SEVERITY.ERROR
+      );
+      return null;
+    }
+
+    const value = this.advance();
+    if (!/^[A-Za-z0-9_-]+$/.test(value.value)) {
+      this.reportToken(value, "Project value must use only letters, numbers, '-' or '_' (no spaces).", SEVERITY.ERROR);
+    }
+    return value;
   }
 
   expectValue(message) {
