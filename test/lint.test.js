@@ -40,8 +40,7 @@ cadence threeVariantsShootout {
   variants = 3;
   sprints = 2;
   compare using qualityCheck;
-  keep best;
-  discard rest;
+  keep best 2;
 }
 
 create MyNewArtifact from juliet """
@@ -91,8 +90,7 @@ cadence c {
   variants = 1;
   sprints = 1;
   compare using quality;
-  keep best;
-  discard rest;
+  keep best 1;
 }
 create A from juliet """prompt""" with {
   triage = triage;
@@ -104,6 +102,24 @@ extend A.prompt with """nope""";
     validate: (diagnostics) => {
       const errorMessages = messages(diagnostics).join("\n");
       assert.match(errorMessages, /Only '<Artifact>\.rubric' is currently supported by extend/);
+    }
+  },
+  {
+    name: "reports keep best without integer limit",
+    source: `
+rubric quality {
+  criterion "Spec" points 1;
+}
+cadence c {
+  variants = 2;
+  sprints = 1;
+  compare using quality;
+  keep best;
+}
+`,
+    validate: (diagnostics) => {
+      const errorMessages = messages(diagnostics).join("\n");
+      assert.match(errorMessages, /Expected integer keep limit after 'keep best'/);
     }
   },
   {

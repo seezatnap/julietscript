@@ -441,13 +441,11 @@ class Parser {
 
       if (this.matchKeyword("keep")) {
         this.expectKeyword("best", "Expected 'best' after 'keep'.");
+        const keepCount = this.expect("number", "Expected integer keep limit after 'keep best'.");
+        if (keepCount && Number.parseInt(keepCount.value, 10) <= 0) {
+          this.reportToken(keepCount, "'keep best' value should be greater than 0.", SEVERITY.ERROR);
+        }
         this.expect(";", "Expected ';' after keep statement.");
-        continue;
-      }
-
-      if (this.matchKeyword("discard")) {
-        this.expectKeyword("rest", "Expected 'rest' after 'discard'.");
-        this.expect(";", "Expected ';' after discard statement.");
         continue;
       }
 
@@ -479,7 +477,7 @@ class Parser {
         continue;
       }
 
-      this.reportCurrent("Expected cadence assignment or action (compare/keep/discard).", SEVERITY.ERROR);
+      this.reportCurrent("Expected cadence assignment or action (compare/keep).", SEVERITY.ERROR);
       this.synchronizeInBlock();
     }
 

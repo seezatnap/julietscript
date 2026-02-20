@@ -34,8 +34,7 @@ cadence MemoLoop {
   variants = 4;
   sprints = 2;
   compare using MemoRubric;
-  keep best;
-  discard rest;
+  keep best 2;
 }
 
 # 5) Create produces an artifact from a prompt and named attachments.
@@ -53,6 +52,12 @@ extend LaunchMemo.rubric with "Add a criterion for risk disclosure quality.";
 # 7) Halt can stop execution, optionally with a message.
 halt "Stop after the first accepted memo.";
 ```
+
+`keep best <int>;` sets the survivor cap per sprint.
+
+- Round 1: `variants = 4` creates 4 branches, then `keep best 2` keeps 2.
+- Round 2: 2 survivors each branch into 4 variants (`2 x 4 = 8`), then keep 2.
+- Round 3: again `2 x 4 = 8`, then keep 2.
 
 ## Repository Scope
 
@@ -110,7 +115,7 @@ Current implementation in this repo includes:
 - Statement parsing for `juliet`, `policy`, `rubric`, `cadence`, `create`, `extend`, `halt`
 - Invalid/unknown keys in `juliet { ... }` and `create ... with { ... }`
 - Unresolved references (policy/rubric/cadence/artifact)
-- Cadence action validation (`compare using`, `keep best`, `discard rest`)
+- Cadence action validation (`compare using`, `keep best <int>`)
 - Extend target validation (`<Artifact>.rubric`)
 - Common syntax errors (missing `;`, missing braces, bad strings)
 
