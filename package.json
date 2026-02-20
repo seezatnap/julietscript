@@ -1,0 +1,46 @@
+{
+  "name": "julietscript-vscode",
+  "displayName": "JulietScript",
+  "description": "Syntax highlighting and linter diagnostics for JulietScript.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:julietscript"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "julietscript",
+        "aliases": [
+          "JulietScript",
+          "julietscript"
+        ],
+        "extensions": [
+          ".julietscript",
+          ".jls",
+          ".juliet"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "julietscript",
+        "scopeName": "source.julietscript",
+        "path": "./syntaxes/julietscript.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "test:linter": "node ./test/lint.test.js"
+  }
+}

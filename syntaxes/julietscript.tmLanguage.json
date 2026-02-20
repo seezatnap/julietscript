@@ -1,0 +1,160 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "JulietScript",
+  "scopeName": "source.julietscript",
+  "patterns": [
+    {
+      "include": "#blockStrings"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#identifiers"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.julietscript",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "blockStrings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.julietscript",
+          "begin": "\"\"\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.julietscript"
+            }
+          },
+          "end": "\"\"\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.julietscript"
+            }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.julietscript",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.julietscript"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.julietscript"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.julietscript",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.julietscript",
+          "match": "\\b(juliet|policy|rubric|cadence|create|extend|halt|from|with|using|compare|keep|discard|criterion|points|tiebreakers)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.julietscript",
+          "match": "="
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.integer.julietscript",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.julietscript",
+          "match": "\\b(best|rest)\\b"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.block.begin.julietscript",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.block.end.julietscript",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.section.brackets.begin.julietscript",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.brackets.end.julietscript",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.terminator.statement.julietscript",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.comma.julietscript",
+          "match": ","
+        },
+        {
+          "name": "punctuation.accessor.dot.julietscript",
+          "match": "\\."
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.identifier.julietscript",
+          "match": "\\b[A-Za-z][A-Za-z0-9_]*\\b"
+        }
+      ]
+    }
+  }
+}
