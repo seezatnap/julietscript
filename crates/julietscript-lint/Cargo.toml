@@ -1,0 +1,17 @@
+[package]
+name = "julietscript-lint"
+version = "0.1.0"
+edition = "2021"
+description = "Lint JulietScript files against the repository specification"
+license = "MIT"
+
+[[bin]]
+name = "julietscript-lint"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+glob = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

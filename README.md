@@ -79,6 +79,7 @@ Current implementation in this repo includes:
 - Syntax grammar for `.julietscript`, `.jls`, `.juliet`
 - Parser-backed lint diagnostics
 - VS Code diagnostics integration
+- Rust workspace CLI wrapper (`julietscript-lint`)
 
 ## VS Code Extension
 
@@ -133,4 +134,23 @@ Current implementation in this repo includes:
 
 ```bash
 npm run test:linter
+```
+
+## Rust CLI Linter
+
+This repository also includes a Cargo workspace with a Rust binary named `julietscript-lint`.
+
+The CLI accepts one or more `--glob` flags to select JulietScript files, then runs lint checks against the specification implemented in `src/linter.js`.
+
+```bash
+cargo run -p julietscript-lint -- --glob "**/*.julietscript"
+```
+
+Multiple globs are supported:
+
+```bash
+cargo run -p julietscript-lint -- \
+  --glob "**/*.julietscript" \
+  --glob "**/*.jls" \
+  --glob "**/*.juliet"
 ```
