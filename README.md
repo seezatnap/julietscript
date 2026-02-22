@@ -21,9 +21,9 @@ policy Triage = "Prioritize correctness issues first, then clarity.";
 
 # 3) Rubrics define scoring criteria and optional tiebreakers.
 rubric MemoRubric {
-  criterion "Accuracy" points 5;
-  criterion "Clarity" points 3;
-  criterion "Actionability" points 2;
+  criterion "Accuracy" points 5 means "Facts are correct and verifiable.";
+  criterion "Clarity" points 3 means "Writing is concise, logically organized, and easy to scan.";
+  criterion "Actionability" points 2 means "Recommendations are specific and can be executed.";
   tiebreakers ["Accuracy", "Clarity"];
 }
 
@@ -54,6 +54,7 @@ halt "Stop after the first accepted memo.";
 
 `keep best <int>;` sets the survivor cap per sprint.
 `project` names should use only letters, numbers, `-`, and `_` (no spaces).
+`criterion "<name>" points <int> means "<definition>";` adds an optional criterion definition.
 
 - Round 1: `variants = 4` creates 4 branches, then `keep best 2` keeps 2.
 - Round 2: 2 survivors each branch into 4 variants (`2 x 4 = 8`), then keep 2.

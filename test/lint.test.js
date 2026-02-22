@@ -29,8 +29,8 @@ Open tasks for gaps before sprinting.
 """;
 
 rubric qualityCheck {
-  criterion "Meets all specs" points 4;
-  criterion "Tests green + good coverage" points 2;
+  criterion "Meets all specs" points 4 means "Implements the requested behavior without regressions.";
+  criterion "Tests green + good coverage" points 2 means "All relevant tests pass and new logic is validated.";
   tiebreakers ["Meets all specs"];
 }
 
@@ -146,6 +146,18 @@ cadence c {
     validate: (diagnostics) => {
       const errorMessages = messages(diagnostics).join("\n");
       assert.match(errorMessages, /Expected integer keep limit after 'keep best'/);
+    }
+  },
+  {
+    name: "reports missing criterion meaning string",
+    source: `
+rubric quality {
+  criterion "Clarity" points 3 means;
+}
+`,
+    validate: (diagnostics) => {
+      const errorMessages = messages(diagnostics).join("\n");
+      assert.match(errorMessages, /Expected criterion meaning string after 'means'/);
     }
   },
   {

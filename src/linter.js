@@ -381,6 +381,12 @@ class Parser {
         if (points && Number.parseInt(points.value, 10) <= 0) {
           this.reportToken(points, "Criterion points should be a positive integer.", SEVERITY.WARNING);
         }
+        if (this.matchKeyword("means")) {
+          const criterionMeaning = this.expectStringLiteral("Expected criterion meaning string after 'means'.");
+          if (criterionMeaning && criterionMeaning.value.trim().length === 0) {
+            this.reportToken(criterionMeaning, "Criterion meaning should not be empty.", SEVERITY.WARNING);
+          }
+        }
         this.expect(";", "Expected ';' after criterion definition.");
         continue;
       }
