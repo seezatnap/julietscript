@@ -1,6 +1,6 @@
 # JulietScript Documentation
 
-JulietScript is a small, declarative scripting language for orchestrating repeatable “operator ↔ Juliet” workflows. It is designed to automate the *shape* of your interactions (preflight → sprint cadence → triage failures → compare variants → keep best → stop for review), while letting the *content* remain plain-English instructions and prompts.
+JulietScript is a small, declarative scripting language for orchestrating repeatable “operator ↔ Juliet” workflows. It is designed to automate the *shape* of your interactions (preflight → sprint cadence → failure triage → compare variants → keep best → stop for review), while letting the *content* remain plain-English instructions and prompts.
 
 This documentation focuses on the surface syntax and the mental model. The mechanics of how the runtime talks to `juliet` (CLI flags, session IDs, streaming, etc.) are intentionally left unspecified for now.
 
@@ -13,7 +13,7 @@ This documentation focuses on the surface syntax and the mental model. The mecha
 JulietScript coordinates a pipeline of work that typically looks like:
 
 1. **Set defaults** (engine, language; project is runtime-scoped)
-2. **Define reusable policies** (triage, preflight)
+2. **Define reusable policies** (failureTriage, preflight)
 3. **Define reusable evaluation** (rubrics)
 4. **Define a sprint plan** (cadence, variants, sprints, comparison)
 5. **Create artifacts** by sending prompts to Juliet, attaching the above
@@ -223,7 +223,7 @@ create MyNewArtifact from juliet """
 <prompt here>
 """ with {
   preflight = sprintPreFlight;
-  triage    = failureTriage;
+  failureTriage = failureTriage;
   cadence   = threeVariantsShootout;
   rubric    = qualityCheck;
 };
@@ -239,7 +239,7 @@ create MyNewArtifact from juliet """
 #### `with { ... }` supported keys (initial set)
 
 * `preflight` — a `policy`
-* `triage` — a `policy`
+* `failureTriage` — a `policy`
 * `cadence` — a `cadence`
 * `rubric` — a `rubric`
 
@@ -261,7 +261,7 @@ Also add visual tests using Playwright and make sure they’re all present and r
 
 * `<ArtifactName>.rubric` — extend the artifact’s evaluation requirements
 
-> You can later add targets like `<ArtifactName>.prompt` or `<ArtifactName>.triage` if you find it valuable, but keep the initial surface area small.
+> You can later add targets like `<ArtifactName>.prompt` or `<ArtifactName>.failureTriage` if you find it valuable, but keep the initial surface area small.
 
 ---
 
@@ -378,7 +378,7 @@ create MyNewArtifact from juliet """
 (Write the real prompt exactly as you'd send it to Juliet.)
 """ with {
   preflight = sprintPreFlight;
-  triage    = failureTriage;
+  failureTriage = failureTriage;
   cadence   = threeVariantsShootout;
   rubric    = qualityCheck;
 };
@@ -400,7 +400,7 @@ create MyOtherArtifact from juliet """
 <another prompt here>
 """ with {
   preflight = sprintPreFlight;
-  triage    = failureTriage;
+  failureTriage = failureTriage;
   cadence   = threeVariantsShootout;
   rubric    = qualityCheck;
 };
@@ -422,9 +422,9 @@ Combine the best parts of the two artifacts into a coherent final implementation
 - Ensure tests are green and coverage is strong.
 - Maintain consistency with project conventions.
 """ using [MyNewArtifact, MyOtherArtifact] with {
-  triage  = failureTriage;
-  cadence = threeVariantsShootout;
-  rubric  = qualityCheck;
+  failureTriage = failureTriage;
+  cadence       = threeVariantsShootout;
+  rubric        = qualityCheck;
 };
 ```
 

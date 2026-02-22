@@ -45,7 +45,7 @@ create MyNewArtifact from juliet """
 <prompt here>
 """ with {
   preflight = sprintPreFlight;
-  triage = failureTriage;
+  failureTriage = failureTriage;
   cadence = threeVariantsShootout;
   rubric = qualityCheck;
 };
@@ -90,9 +90,9 @@ juliet {
   {
     name: "reports unknown references",
     source: `
-policy triage = """x""";
+policy failureTriage = """x""";
 create A from juliet """prompt""" with {
-  triage = triage;
+  failureTriage = failureTriage;
   cadence = missingCadence;
   rubric = missingRubric;
 };
@@ -106,7 +106,7 @@ create A from juliet """prompt""" with {
   {
     name: "reports invalid extend target",
     source: `
-policy triage = """x""";
+policy failureTriage = """x""";
 rubric quality {
   criterion "Spec" points 1;
 }
@@ -117,7 +117,7 @@ cadence c {
   keep best 1;
 }
 create A from juliet """prompt""" with {
-  triage = triage;
+  failureTriage = failureTriage;
   cadence = c;
   rubric = quality;
 };

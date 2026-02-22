@@ -18,7 +18,7 @@ const TOP_LEVEL_KEYWORDS = new Set([
 const JULIET_ALLOWED_KEYS = new Set(["engine"]);
 const CREATE_ALLOWED_KEYS = new Map([
   ["preflight", "policy"],
-  ["triage", "policy"],
+  ["failureTriage", "policy"],
   ["cadence", "cadence"],
   ["rubric", "rubric"]
 ]);
@@ -550,7 +550,7 @@ class Parser {
       if (!CREATE_ALLOWED_KEYS.has(key.value)) {
         this.reportToken(
           key,
-          `Unknown create attachment key '${key.value}'. Supported keys: preflight, triage, cadence, rubric.`,
+          `Unknown create attachment key '${key.value}'. Supported keys: preflight, failureTriage, cadence, rubric.`,
           SEVERITY.WARNING
         );
         continue;

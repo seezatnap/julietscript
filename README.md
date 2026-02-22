@@ -12,11 +12,20 @@ juliet {
 
 # 2) Reusable policies are named prompt bodies.
 policy Preflight = """
-Check for factual errors, unsupported claims, and missing constraints.
-Return short, explicit fixes.
+Before sprinting:
+- confirm scope, constraints, and acceptance criteria are explicit
+- if behavior changes, verify tests exist or open a task to add them
+- flag high-risk files (large modules, migrations, generated outputs)
+Return a short pass/fail checklist with required follow-ups.
 """;
 
-policy Triage = "Prioritize correctness issues first, then clarity.";
+policy FailureTriage = """
+If a sprint fails:
+- capture failing command, key error output, and likely root cause
+- attempt one safe recovery (resume/retry with minimal scope change)
+- if failure repeats, stop and open a human-review task with context
+Prioritize correctness and unblock path over speed.
+""";
 
 # 3) Rubrics define scoring criteria and optional tiebreakers.
 rubric MemoRubric {
@@ -38,10 +47,10 @@ cadence MemoLoop {
 # 5) Create produces an artifact from a prompt and named attachments.
 create LaunchMemo from juliet "Write a one-page launch memo for the Q2 release."
 with {
-  preflight = Preflight;  # policy
-  triage = Triage;        # policy
-  cadence = MemoLoop;     # cadence
-  rubric = MemoRubric;    # rubric
+  preflight = Preflight;            # policy: proactive checks before sprinting
+  failureTriage = FailureTriage;    # policy: reactive recovery when sprinting fails
+  cadence = MemoLoop;               # cadence
+  rubric = MemoRubric;              # rubric
 };
 
 # 6) Extend currently targets '<Artifact>.rubric' with extra guidance.
@@ -54,6 +63,7 @@ halt "Stop after the first accepted memo.";
 `keep best <int>;` sets the survivor cap per sprint.
 `project` is intentionally runtime-scoped and should be supplied per execution, not in `juliet { ... }`.
 `criterion "<name>" points <int> means "<definition>";` adds an optional criterion definition.
+`preflight` is preventive (before work starts); `failureTriage` is corrective (after failures).
 
 - Round 1: `variants = 4` creates 4 branches, then `keep best 2` keeps 2.
 - Round 2: 2 survivors each branch into 4 variants (`2 x 4 = 8`), then keep 2.
