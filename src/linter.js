@@ -15,7 +15,7 @@ const TOP_LEVEL_KEYWORDS = new Set([
   "halt"
 ]);
 
-const JULIET_ALLOWED_KEYS = new Set(["engine", "project"]);
+const JULIET_ALLOWED_KEYS = new Set(["engine"]);
 const CREATE_ALLOWED_KEYS = new Map([
   ["preflight", "policy"],
   ["triage", "policy"],
@@ -330,12 +330,12 @@ class Parser {
       }
 
       if (!JULIET_ALLOWED_KEYS.has(key.value)) {
-        this.reportToken(key, `Unknown juliet key '${key.value}'. Supported keys: engine, project.`, SEVERITY.WARNING);
+        this.reportToken(key, `Unknown juliet key '${key.value}'. Supported keys: engine.`, SEVERITY.WARNING);
       }
 
       this.expect("=", "Expected '=' after juliet key.");
-      if (key.value === "project") {
-        this.expectProjectValue();
+      if (key.value === "engine") {
+        this.expectEngineValue();
       } else {
         this.expectValue("Expected a value after '='.");
       }
@@ -629,22 +629,6 @@ class Parser {
       return;
     }
     this.reportCurrent("Expected engine value as an identifier or quoted string.", SEVERITY.ERROR);
-  }
-
-  expectProjectValue() {
-    if (!(this.check("identifier") || this.check("string"))) {
-      this.reportCurrent(
-        "Expected project value as an identifier or quoted string using only letters, numbers, '-' or '_'.",
-        SEVERITY.ERROR
-      );
-      return null;
-    }
-
-    const value = this.advance();
-    if (!/^[A-Za-z0-9_-]+$/.test(value.value)) {
-      this.reportToken(value, "Project value must use only letters, numbers, '-' or '_' (no spaces).", SEVERITY.ERROR);
-    }
-    return value;
   }
 
   expectValue(message) {

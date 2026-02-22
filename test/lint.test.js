@@ -17,7 +17,6 @@ const tests = [
     source: `
 juliet {
   engine = codex;
-  project = "division-challenge";
 }
 
 policy failureTriage = """
@@ -63,16 +62,16 @@ halt "Human review checkpoint.";
     }
   },
   {
-    name: "reports invalid project name format",
+    name: "reports unsupported juliet project key",
     source: `
 juliet {
   engine = codex;
-  project = "Q2 launch memo";
+  project = "division-challenge";
 }
 `,
     validate: (diagnostics) => {
-      const errorMessages = messages(diagnostics).join("\n");
-      assert.match(errorMessages, /Project value must use only letters, numbers, '-' or '_' \(no spaces\)/);
+      const warningMessages = messages(diagnostics).join("\n");
+      assert.match(warningMessages, /Unknown juliet key 'project'/);
     }
   },
   {
@@ -80,7 +79,6 @@ juliet {
     source: `
 juliet {
   engine = codex;
-  project = "x";
   language = "en";
 }
 `,

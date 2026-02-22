@@ -5,10 +5,9 @@ JulietScript is the script language used in conjunction with [seezatnap/juliet](
 ## Reference Syntax (Annotated)
 
 ```julietscript
-# 1) Global project settings for the run context.
+# 1) Global runtime defaults for the run context.
 juliet {
   engine = codex;
-  project = "q2-launch-memo";
 }
 
 # 2) Reusable policies are named prompt bodies.
@@ -53,7 +52,7 @@ halt "Stop after the first accepted memo.";
 ```
 
 `keep best <int>;` sets the survivor cap per sprint.
-`project` names should use only letters, numbers, `-`, and `_` (no spaces).
+`project` is intentionally runtime-scoped and should be supplied per execution, not in `juliet { ... }`.
 `criterion "<name>" points <int> means "<definition>";` adds an optional criterion definition.
 
 - Round 1: `variants = 4` creates 4 branches, then `keep best 2` keeps 2.

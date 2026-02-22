@@ -12,7 +12,7 @@ This documentation focuses on the surface syntax and the mental model. The mecha
 
 JulietScript coordinates a pipeline of work that typically looks like:
 
-1. **Set defaults** (engine, project, language)
+1. **Set defaults** (engine, language; project is runtime-scoped)
 2. **Define reusable policies** (triage, preflight)
 3. **Define reusable evaluation** (rubrics)
 4. **Define a sprint plan** (cadence, variants, sprints, comparison)
@@ -88,7 +88,7 @@ If a worker fails, heal and resume.
   Good for short values.
 
 ```julietscript
-juliet { project = "division-challenge"; }
+juliet { engine = codex; }
 ```
 
 ---
@@ -114,7 +114,6 @@ Defines script-wide defaults used by subsequent statements.
 ```julietscript
 juliet {
   engine   = codex;                 # default engine (e.g. codex, claude)
-  project  = "division-challenge";  # maps to --project/role
   language = "en";                  # constrain responses
 }
 ```
@@ -122,8 +121,8 @@ juliet {
 ### Supported keys (initial set)
 
 * `engine` — default execution engine
-* `project` — the Juliet role/project context
 * `language` — response language constraint (e.g., `"en"`)
+* `project` — provided by the runtime per execution, not by this block
 
 > The runtime may support additional keys later. Unknown keys should be ignored or warned on (implementation choice).
 
@@ -314,7 +313,6 @@ Below is a complete script that matches the workflow you described. Comments exp
 # ============================================================
 juliet {
   engine   = codex;                 # Default engine for all work
-  project  = "division-challenge";  # Juliet role/project scope
   language = "en";                  # All responses must be English
 }
 
