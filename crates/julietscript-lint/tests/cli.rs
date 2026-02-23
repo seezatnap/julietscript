@@ -98,6 +98,14 @@ halt;
 "#
 }
 
+fn source_files_script() -> &'static str {
+    r#"create Phase1WebGLFoundation from julietArtifactSourceFiles [
+  "../path-to-file/example.md",
+  "../path-to-file/notes.md"
+];
+"#
+}
+
 #[test]
 fn exits_zero_for_valid_file_match() {
     if !has_node() {
@@ -134,6 +142,26 @@ fn exits_one_and_prints_diagnostics_for_invalid_file() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
     assert!(stdout.contains("error: Expected ';' after policy declaration."));
     assert!(stdout.contains("Linted 1 file(s): 3 issue(s) (3 error(s), 0 warning(s))."));
+}
+
+#[test]
+fn exits_zero_for_source_files_seeded_create() {
+    if !has_node() {
+        eprintln!("Skipping test: node is not available.");
+        return;
+    }
+
+    let dir = TestDir::new();
+    write_file(
+        &dir.file("scripts/source-seeded.julietscript"),
+        source_files_script(),
+    );
+
+    let output = run_lint(dir.path(), &["**/*.julietscript"]);
+    assert_eq!(output.status.code(), Some(0));
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("Linted 1 file(s): 0 issue(s) (0 error(s), 0 warning(s))."));
 }
 
 #[test]

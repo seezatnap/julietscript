@@ -104,6 +104,29 @@ create A from juliet """prompt""" with {
     }
   },
   {
+    name: "accepts create seeded from source files",
+    source: `
+create Phase1WebGLFoundation from julietArtifactSourceFiles [
+  "../path-to-file/example.md",
+  "../path-to-file/notes.md"
+];
+`,
+    validate: (diagnostics) => {
+      assert.strictEqual(countBySeverity(diagnostics, SEVERITY.ERROR), 0);
+      assert.strictEqual(countBySeverity(diagnostics, SEVERITY.WARNING), 0);
+    }
+  },
+  {
+    name: "reports empty julietArtifactSourceFiles list",
+    source: `
+create Phase1WebGLFoundation from julietArtifactSourceFiles [];
+`,
+    validate: (diagnostics) => {
+      const errorMessages = messages(diagnostics).join("\n");
+      assert.match(errorMessages, /Expected at least one file path in julietArtifactSourceFiles list/);
+    }
+  },
+  {
     name: "reports invalid extend target",
     source: `
 policy failureTriage = """x""";

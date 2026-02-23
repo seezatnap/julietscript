@@ -509,26 +509,75 @@ class Parser {
     }
 
     this.expectKeyword("from", "Expected 'from' after artifact name.");
-    this.expectKeyword("juliet", "Expected 'juliet' after 'from'.");
-    this.expectStringLiteral("Expected prompt string after 'from juliet'.");
-
-    if (this.matchKeyword("using")) {
-      this.expect("[", "Expected '[' after 'using'.");
-      if (!this.check("]")) {
-        while (true) {
-          const dependency = this.expectIdentifier("Expected artifact name in 'using' list.");
-          if (dependency && !this.context.artifacts.has(dependency.value)) {
-            this.reportToken(dependency, `Unknown artifact '${dependency.value}' in using list.`, SEVERITY.ERROR);
-          }
-          if (!this.match(",")) {
-            break;
-          }
-        }
-      }
-      this.expect("]", "Expected ']' after using list.");
+    if (this.matchKeyword("juliet")) {
+      this.expectStringLiteral("Expected prompt string after 'from juliet'.");
+    } else if (this.matchKeyword("julietArtifactSourceFiles")) {
+      this.parseCreateSourceFilesList();
+    } else {
+      this.reportCurrent("Expected 'juliet' or 'julietArtifactSourceFiles' after 'from'.", SEVERITY.ERROR);
     }
 
-    this.expectKeyword("with", "Expected 'with' after create prompt.");
+    if (this.matchKeyword("using")) {
+      this.parseCreateUsingList();
+    }
+
+    if (this.matchKeyword("with")) {
+      this.parseCreateAttachments();
+    }
+
+    this.expect(";", "Expected ';' after create statement.");
+    this.registerDefinition(this.context.artifacts, artifact, "artifact");
+  }
+
+  parseCreateSourceFilesList() {
+    const listStart = this.expect("[", "Expected '[' after 'julietArtifactSourceFiles'.");
+    const seenPaths = new Set();
+    let pathCount = 0;
+
+    if (!this.check("]")) {
+      while (true) {
+        const sourcePath = this.expect("string", "Expected quoted file path in source files list.");
+        if (sourcePath) {
+          pathCount += 1;
+          if (seenPaths.has(sourcePath.value)) {
+            this.reportToken(sourcePath, `Duplicate source file path '${sourcePath.value}' in julietArtifactSourceFiles list.`, SEVERITY.WARNING);
+          }
+          seenPaths.add(sourcePath.value);
+        }
+        if (!this.match(",")) {
+          break;
+        }
+      }
+    }
+
+    this.expect("]", "Expected ']' after source files list.");
+
+    if (pathCount === 0) {
+      this.reportToken(
+        listStart || this.previous(),
+        "Expected at least one file path in julietArtifactSourceFiles list.",
+        SEVERITY.ERROR
+      );
+    }
+  }
+
+  parseCreateUsingList() {
+    this.expect("[", "Expected '[' after 'using'.");
+    if (!this.check("]")) {
+      while (true) {
+        const dependency = this.expectIdentifier("Expected artifact name in 'using' list.");
+        if (dependency && !this.context.artifacts.has(dependency.value)) {
+          this.reportToken(dependency, `Unknown artifact '${dependency.value}' in using list.`, SEVERITY.ERROR);
+        }
+        if (!this.match(",")) {
+          break;
+        }
+      }
+    }
+    this.expect("]", "Expected ']' after using list.");
+  }
+
+  parseCreateAttachments() {
     this.expect("{", "Expected '{' to begin create attachments block.");
     const seenKeys = new Set();
 
@@ -568,8 +617,6 @@ class Parser {
     }
 
     this.expect("}", "Expected '}' to close create attachments block.");
-    this.expect(";", "Expected ';' after create statement.");
-    this.registerDefinition(this.context.artifacts, artifact, "artifact");
   }
 
   parseExtend() {

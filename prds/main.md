@@ -227,13 +227,19 @@ create MyNewArtifact from juliet """
   cadence   = threeVariantsShootout;
   rubric    = qualityCheck;
 };
+
+create Phase1WebGLFoundation from julietArtifactSourceFiles [
+  "../path-to-file/example.md",
+  "../path-to-file/notes.md"
+];
 ```
 
 #### `create` parts
 
 * `MyNewArtifact` — the artifact name
 * `from juliet """..."""` — the user prompt body
-* `with { ... }` — attachments (policies, cadence, rubric)
+* `from julietArtifactSourceFiles ["...", "..."]` — source-file seeded artifact input (one or more paths)
+* optional `with { ... }` — attachments (policies, cadence, rubric)
 * semicolon `;` ends the statement
 
 #### `with { ... }` supported keys (initial set)
