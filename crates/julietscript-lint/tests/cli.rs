@@ -1,7 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static TEST_DIR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 struct TestDir {
     path: PathBuf,
@@ -14,10 +17,12 @@ impl TestDir {
             .duration_since(UNIX_EPOCH)
             .expect("clock should be after unix epoch")
             .as_nanos();
+        let counter = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
         path.push(format!(
-            "julietscript-lint-tests-{}-{}",
+            "julietscript-lint-tests-{}-{}-{}",
             std::process::id(),
-            unique
+            unique,
+            counter
         ));
         fs::create_dir_all(&path).expect("failed to create temporary test directory");
         Self { path }

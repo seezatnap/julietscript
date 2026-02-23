@@ -8,20 +8,39 @@ use anyhow::{bail, Context, Result};
 use clap::{ArgAction, Parser};
 use serde::{Deserialize, Serialize};
 
+const EMBEDDED_LINTER_SOURCE: &str = include_str!("linter.js");
+
 const NODE_BRIDGE_SCRIPT: &str = r#"
 const fs = require("fs");
 
 const linterPath = process.env.JULIETSCRIPT_LINTER_PATH;
-if (!linterPath) {
-  console.error("Missing JULIETSCRIPT_LINTER_PATH environment variable.");
+const linterSource = process.env.JULIETSCRIPT_LINTER_SOURCE;
+
+let lintJulietScript;
+if (linterPath) {
+  try {
+    ({ lintJulietScript } = require(linterPath));
+  } catch (error) {
+    console.error(`Failed to load JulietScript linter from ${linterPath}: ${error.message}`);
+    process.exit(1);
+  }
+} else if (linterSource) {
+  try {
+    const module = { exports: {} };
+    const compile = new Function("module", "exports", "require", linterSource);
+    compile(module, module.exports, require);
+    ({ lintJulietScript } = module.exports);
+  } catch (error) {
+    console.error(`Failed to compile embedded JulietScript linter: ${error.message}`);
+    process.exit(1);
+  }
+} else {
+  console.error("No JulietScript linter source available. Set JULIETSCRIPT_LINTER_PATH or JULIETSCRIPT_LINTER_SOURCE.");
   process.exit(1);
 }
 
-let lintJulietScript;
-try {
-  ({ lintJulietScript } = require(linterPath));
-} catch (error) {
-  console.error(`Failed to load JulietScript linter from ${linterPath}: ${error.message}`);
+if (typeof lintJulietScript !== "function") {
+  console.error("Loaded JulietScript linter does not export lintJulietScript(source).");
   process.exit(1);
 }
 
@@ -69,6 +88,13 @@ struct Args {
         help = "Base directory used to resolve relative --glob patterns."
     )]
     root: PathBuf,
+
+    #[arg(
+        long,
+        value_name = "FILE",
+        help = "Path to linter.js. Overrides the embedded linter implementation."
+    )]
+    linter: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -119,8 +145,12 @@ fn main() {
 
 fn run() -> Result<ExitCode> {
     let args = Args::parse();
-    let root = fs::canonicalize(&args.root)
-        .with_context(|| format!("failed to resolve --root directory '{}'", args.root.display()))?;
+    let root = fs::canonicalize(&args.root).with_context(|| {
+        format!(
+            "failed to resolve --root directory '{}'",
+            args.root.display()
+        )
+    })?;
 
     let files = collect_files(&root, &args.globs)?;
     if files.is_empty() {
@@ -135,8 +165,8 @@ fn run() -> Result<ExitCode> {
     }
 
     let lint_inputs = load_files(&files)?;
-    let linter_path = resolve_linter_path(&root)?;
-    let mut lint_results = run_node_linter(&linter_path, &lint_inputs)?;
+    let linter_path = resolve_linter_path(args.linter)?;
+    let mut lint_results = run_node_linter(linter_path.as_deref(), &lint_inputs)?;
     lint_results.sort_by(|a, b| a.path.cmp(&b.path));
 
     let mut issue_count = 0usize;
@@ -192,11 +222,11 @@ fn collect_files(root: &Path, patterns: &[String]) -> Result<Vec<PathBuf>> {
             .with_context(|| format!("invalid glob pattern '{}'", pattern))?;
 
         for entry in entries {
-            let path = entry.with_context(|| {
-                format!("error while expanding glob pattern '{}'", pattern)
-            })?;
+            let path = entry
+                .with_context(|| format!("error while expanding glob pattern '{}'", pattern))?;
             if path.is_file() {
-                files.insert(fs::canonicalize(path).context("failed to canonicalize matched path")?);
+                files
+                    .insert(fs::canonicalize(path).context("failed to canonicalize matched path")?);
             }
         }
     }
@@ -207,8 +237,8 @@ fn collect_files(root: &Path, patterns: &[String]) -> Result<Vec<PathBuf>> {
 fn load_files(paths: &[PathBuf]) -> Result<Vec<LintInputFile>> {
     let mut files = Vec::with_capacity(paths.len());
     for path in paths {
-        let source =
-            fs::read_to_string(path).with_context(|| format!("failed to read '{}'", path.display()))?;
+        let source = fs::read_to_string(path)
+            .with_context(|| format!("failed to read '{}'", path.display()))?;
         files.push(LintInputFile {
             path: path.display().to_string(),
             source,
@@ -217,32 +247,55 @@ fn load_files(paths: &[PathBuf]) -> Result<Vec<LintInputFile>> {
     Ok(files)
 }
 
-fn resolve_linter_path(root: &Path) -> Result<PathBuf> {
-    for ancestor in root.ancestors() {
-        let candidate = ancestor.join("src/linter.js");
-        if candidate.is_file() {
-            return fs::canonicalize(candidate).context("failed to canonicalize src/linter.js path");
+fn resolve_linter_path(linter_arg: Option<PathBuf>) -> Result<Option<PathBuf>> {
+    if let Some(path) = linter_arg {
+        if !path.is_file() {
+            bail!("--linter path '{}' is not a file", path.display());
         }
+        return fs::canonicalize(path)
+            .context("failed to canonicalize --linter path")
+            .map(Some);
     }
 
-    let fallback = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../src/linter.js");
-    if fallback.is_file() {
-        return fs::canonicalize(fallback).context("failed to canonicalize fallback src/linter.js path");
+    if let Some(env_path) = std::env::var_os("JULIETSCRIPT_LINTER_PATH") {
+        let path = PathBuf::from(env_path);
+        if !path.is_file() {
+            bail!(
+                "JULIETSCRIPT_LINTER_PATH '{}' is not a file",
+                path.display()
+            );
+        }
+        return fs::canonicalize(path)
+            .context("failed to canonicalize JULIETSCRIPT_LINTER_PATH")
+            .map(Some);
     }
 
-    bail!("unable to locate src/linter.js. Run this tool from inside the JulietScript repository");
+    Ok(None)
 }
 
-fn run_node_linter(linter_path: &Path, files: &[LintInputFile]) -> Result<Vec<LintFileResult>> {
+fn run_node_linter(
+    linter_path: Option<&Path>,
+    files: &[LintInputFile],
+) -> Result<Vec<LintFileResult>> {
     let payload = serde_json::to_vec(files).context("failed to serialize lint payload")?;
 
-    let mut child = Command::new("node")
+    let mut command = Command::new("node");
+    command
         .arg("-e")
         .arg(NODE_BRIDGE_SCRIPT)
-        .env("JULIETSCRIPT_LINTER_PATH", linter_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    if let Some(path) = linter_path {
+        command.env("JULIETSCRIPT_LINTER_PATH", path);
+    } else if !EMBEDDED_LINTER_SOURCE.trim().is_empty() {
+        command.env("JULIETSCRIPT_LINTER_SOURCE", EMBEDDED_LINTER_SOURCE);
+    } else {
+        bail!("no linter source available. Provide --linter FILE or set JULIETSCRIPT_LINTER_PATH");
+    }
+
+    let mut child = command
         .spawn()
         .context("failed to execute 'node'. Install Node.js (18+) to run julietscript-lint")?;
 
@@ -266,10 +319,13 @@ fn run_node_linter(linter_path: &Path, files: &[LintInputFile]) -> Result<Vec<Li
         if message.is_empty() {
             bail!("node bridge exited with status {}", output.status);
         } else {
-            bail!("node bridge exited with status {}: {}", output.status, message);
+            bail!(
+                "node bridge exited with status {}: {}",
+                output.status,
+                message
+            );
         }
     }
 
-    serde_json::from_slice(&output.stdout)
-        .context("failed to decode JSON results from node bridge")
+    serde_json::from_slice(&output.stdout).context("failed to decode JSON results from node bridge")
 }

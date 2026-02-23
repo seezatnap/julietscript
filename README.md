@@ -141,6 +141,7 @@ npm run test:linter
 This repository also includes a Cargo workspace with a Rust binary named `julietscript-lint`.
 
 The CLI accepts one or more `--glob` flags to select JulietScript files, then runs lint checks against the specification implemented in `src/linter.js`.
+It embeds the linter implementation at build time, so it can run from any working directory.
 
 ```bash
 cargo run -p julietscript-lint -- --glob "**/*.julietscript"
