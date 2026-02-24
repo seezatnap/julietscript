@@ -5,10 +5,87 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
-use clap::{ArgAction, Parser};
+use clap::{ArgAction, Args, Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
 const EMBEDDED_LINTER_SOURCE: &str = include_str!("linter.js");
+const EXAMPLE_SCRIPT: &str = r#"# JulietScript specification example
+# This script is intentionally verbose and annotated so teams can copy/paste
+# from it when bootstrapping new workflows.
+
+# 1) Global runtime defaults.
+#    `project` is intentionally runtime scoped and should not live here.
+juliet {
+  engine = codex;
+}
+
+# 2) Reusable policy prompt bodies.
+policy PreflightChecklist = """
+Before sprinting:
+- restate scope and acceptance criteria
+- list risky files and intended safeguards
+- confirm validation plan before code changes
+""";
+
+# Demonstrates plain quoted strings (block strings above are also valid).
+policy FailureTriage = "On failure: capture root cause, try one safe recovery, then escalate with evidence.";
+
+# 3) Scoring rubric used by cadence compare actions.
+rubric ShipRubric {
+  criterion "Correctness" points 5 means "Behavior matches the specification and tests pass.";
+  criterion "Safety" points 3 means "Risky changes include rollback guidance and guarded rollout.";
+  criterion "Clarity" points 2 means "Patch rationale and follow-up tasks are explicit.";
+  tiebreakers ["Correctness", "Safety"];
+}
+
+# 4) Cadence controls branching + pruning behavior.
+cadence ShipLoop {
+  engine = codex;
+  variants = 3;
+  sprints = 2;
+  compare using ShipRubric;
+  keep best 2;
+}
+
+# 5) Artifact A from source files.
+create SourceBrief from julietArtifactSourceFiles [
+  "../docs/product-brief.md",
+  "../docs/constraints.md"
+];
+
+# 6) Artifact B from a prompt and chained dependency on Artifact A.
+create IterationPlan from juliet """
+Draft an implementation plan with:
+- milestones
+- risks
+- test strategy
+"""
+using [SourceBrief]
+with {
+  preflight = PreflightChecklist;
+  failureTriage = FailureTriage;
+  cadence = ShipLoop;
+  rubric = ShipRubric;
+};
+
+# 7) Artifact C chains both prior artifacts.
+create PatchSet from juliet "Produce a patch series implementing the approved plan."
+using [SourceBrief, IterationPlan]
+with {
+  preflight = PreflightChecklist;
+  failureTriage = FailureTriage;
+  cadence = ShipLoop;
+  rubric = ShipRubric;
+};
+
+# 8) Extend currently supports only `<Artifact>.rubric`.
+extend PatchSet.rubric with """
+Add an explicit criterion for migration safety and backward compatibility.
+""";
+
+# 9) Halt can be bare (`halt;`) or include a message.
+halt "Stop after the first accepted PatchSet.";
+"#;
 
 const NODE_BRIDGE_SCRIPT: &str = r#"
 const fs = require("fs");
@@ -69,9 +146,28 @@ process.stdout.write(JSON.stringify(results));
 #[command(
     name = "julietscript-lint",
     version,
-    about = "Lint JulietScript files against the repository specification"
+    about = "Lint JulietScript files against the repository specification",
+    args_conflicts_with_subcommands = true,
+    subcommand_negates_reqs = true
 )]
-struct Args {
+struct Cli {
+    #[command(subcommand)]
+    command: Option<CliSubcommand>,
+
+    #[command(flatten)]
+    lint: LintArgs,
+}
+
+#[derive(Subcommand, Debug, Clone, Copy)]
+enum CliSubcommand {
+    #[command(
+        about = "Print a deeply annotated JulietScript example that exercises the full linted specification."
+    )]
+    Example,
+}
+
+#[derive(Args, Debug)]
+struct LintArgs {
     #[arg(
         long = "glob",
         required = true,
@@ -144,19 +240,28 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let args = Args::parse();
-    let root = fs::canonicalize(&args.root).with_context(|| {
+    let cli = Cli::parse();
+
+    // Subcommands are handled first so that `julietscript-lint example` can run
+    // without lint flags. No Node.js process is needed for this command.
+    if matches!(cli.command, Some(CliSubcommand::Example)) {
+        print_example();
+        return Ok(ExitCode::Clean);
+    }
+
+    let root = fs::canonicalize(&cli.lint.root).with_context(|| {
         format!(
             "failed to resolve --root directory '{}'",
-            args.root.display()
+            cli.lint.root.display()
         )
     })?;
 
-    let files = collect_files(&root, &args.globs)?;
+    let files = collect_files(&root, &cli.lint.globs)?;
     if files.is_empty() {
         bail!(
             "no files matched. Provided patterns: {}",
-            args.globs
+            cli.lint
+                .globs
                 .iter()
                 .map(String::as_str)
                 .collect::<Vec<_>>()
@@ -165,7 +270,7 @@ fn run() -> Result<ExitCode> {
     }
 
     let lint_inputs = load_files(&files)?;
-    let linter_path = resolve_linter_path(args.linter)?;
+    let linter_path = resolve_linter_path(cli.lint.linter)?;
     let mut lint_results = run_node_linter(linter_path.as_deref(), &lint_inputs)?;
     lint_results.sort_by(|a, b| a.path.cmp(&b.path));
 
@@ -206,6 +311,10 @@ fn run() -> Result<ExitCode> {
     } else {
         Ok(ExitCode::Clean)
     }
+}
+
+fn print_example() {
+    print!("{EXAMPLE_SCRIPT}");
 }
 
 fn collect_files(root: &Path, patterns: &[String]) -> Result<Vec<PathBuf>> {

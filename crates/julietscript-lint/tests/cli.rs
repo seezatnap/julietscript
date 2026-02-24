@@ -69,6 +69,13 @@ fn run_lint(root: &Path, globs: &[&str]) -> Output {
     command.output().expect("failed to run julietscript-lint")
 }
 
+fn run_example() -> Output {
+    Command::new(env!("CARGO_BIN_EXE_julietscript-lint"))
+        .arg("example")
+        .output()
+        .expect("failed to run julietscript-lint example")
+}
+
 fn valid_script() -> &'static str {
     r#"juliet {
   engine = codex;
@@ -104,6 +111,39 @@ fn source_files_script() -> &'static str {
   "../path-to-file/notes.md"
 ];
 "#
+}
+
+#[test]
+fn example_subcommand_prints_annotated_script() {
+    let output = run_example();
+    assert_eq!(output.status.code(), Some(0));
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("# JulietScript specification example"));
+    assert!(stdout.contains("create SourceBrief from julietArtifactSourceFiles ["));
+    assert!(stdout.contains("using [SourceBrief, IterationPlan]"));
+    assert!(stdout.contains("extend PatchSet.rubric with"));
+}
+
+#[test]
+fn example_script_lints_cleanly() {
+    if !has_node() {
+        eprintln!("Skipping test: node is not available.");
+        return;
+    }
+
+    let dir = TestDir::new();
+    let example_output = run_example();
+    assert_eq!(example_output.status.code(), Some(0));
+
+    let example_source = String::from_utf8(example_output.stdout).expect("stdout should be utf8");
+    write_file(&dir.file("scripts/example.julietscript"), &example_source);
+
+    let lint_output = run_lint(dir.path(), &["**/*.julietscript"]);
+    assert_eq!(lint_output.status.code(), Some(0));
+
+    let stdout = String::from_utf8(lint_output.stdout).expect("stdout should be utf8");
+    assert!(stdout.contains("Linted 1 file(s): 0 issue(s) (0 error(s), 0 warning(s))."));
 }
 
 #[test]

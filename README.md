@@ -154,6 +154,12 @@ It embeds the linter implementation at build time, so it can run from any workin
 cargo run -p julietscript-lint -- --glob "**/*.julietscript"
 ```
 
+To print a deeply annotated end-to-end example script (including artifact chaining):
+
+```bash
+cargo run -p julietscript-lint -- example
+```
+
 Multiple globs are supported:
 
 ```bash
