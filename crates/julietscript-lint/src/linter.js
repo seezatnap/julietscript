@@ -7,6 +7,7 @@ const SEVERITY = {
 
 const TOP_LEVEL_KEYWORDS = new Set([
   "juliet",
+  "set",
   "policy",
   "rubric",
   "cadence",
@@ -279,6 +280,7 @@ class Parser {
     this.diagnostics = [...initialDiagnostics];
     this.context = {
       julietDeclared: false,
+      globals: new Map(),
       policies: new Map(),
       rubrics: new Map(),
       cadences: new Map(),
@@ -290,6 +292,8 @@ class Parser {
     while (!this.isAtEnd()) {
       if (this.matchKeyword("juliet")) {
         this.parseJuliet();
+      } else if (this.matchKeyword("set")) {
+        this.parseSet();
       } else if (this.matchKeyword("policy")) {
         this.parsePolicy();
       } else if (this.matchKeyword("rubric")) {
@@ -305,7 +309,7 @@ class Parser {
       } else if (this.check("eof")) {
         break;
       } else {
-        this.reportCurrent("Expected a top-level statement: juliet, policy, rubric, cadence, create, extend, or halt.", SEVERITY.ERROR);
+        this.reportCurrent("Expected a top-level statement: juliet, set, policy, rubric, cadence, create, extend, or halt.", SEVERITY.ERROR);
         this.synchronizeTopLevel();
       }
     }
@@ -355,6 +359,22 @@ class Parser {
     this.expect("=", "Expected '=' after policy name.");
     this.expectStringLiteral("Expected a string or triple-quoted block string for policy body.");
     this.expect(";", "Expected ';' after policy declaration.");
+  }
+
+  parseSet() {
+    const key = this.expect("string", "Expected string key after 'set'.");
+    this.expectKeyword("as", "Expected 'as' after global key string.");
+    const value = this.expect("string", "Expected string value after 'as'.");
+    this.expect(";", "Expected ';' after set statement.");
+
+    if (!key || !value) {
+      return;
+    }
+
+    if (this.context.globals.has(key.value)) {
+      this.reportToken(key, `Duplicate global key assignment '${key.value}'.`, SEVERITY.WARNING);
+    }
+    this.context.globals.set(key.value, value);
   }
 
   parseRubric() {

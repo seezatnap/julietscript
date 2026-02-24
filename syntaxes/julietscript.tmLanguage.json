@@ -88,7 +88,7 @@
       "patterns": [
         {
           "name": "keyword.control.julietscript",
-          "match": "\\b(juliet|julietArtifactSourceFiles|policy|rubric|cadence|create|extend|halt|from|with|using|compare|keep|criterion|points|means|tiebreakers)\\b"
+          "match": "\\b(juliet|set|as|julietArtifactSourceFiles|policy|rubric|cadence|create|extend|halt|from|with|using|compare|keep|criterion|points|means|tiebreakers)\\b"
         }
       ]
     },

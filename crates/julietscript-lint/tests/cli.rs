@@ -81,6 +81,8 @@ fn valid_script() -> &'static str {
   engine = codex;
 }
 
+set "operator_email" as "email@test.com";
+
 policy triage = """Recover quickly.""";
 
 rubric quality {
@@ -120,6 +122,7 @@ fn example_subcommand_prints_annotated_script() {
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
     assert!(stdout.contains("# JulietScript specification example"));
+    assert!(stdout.contains("set \"operator_email\" as \"email@test.com\";"));
     assert!(stdout.contains("create SourceBrief from julietArtifactSourceFiles ["));
     assert!(stdout.contains("using [SourceBrief, IterationPlan]"));
     assert!(stdout.contains("extend PatchSet.rubric with"));

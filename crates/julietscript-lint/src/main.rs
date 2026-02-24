@@ -26,6 +26,10 @@ juliet {
   engine = codex;
 }
 
+# 1a) Top-level globals.
+# Purpose: set reusable global string values at script scope.
+set "operator_email" as "email@test.com";
+
 # 2) Preflight policy.
 # Purpose: reusable "before work starts" checklist instructions.
 # Relationship:

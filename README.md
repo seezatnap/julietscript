@@ -10,7 +10,10 @@ juliet {
   engine = codex;
 }
 
-# 2) Reusable policies are named prompt bodies.
+# 2) Top-level global key/value assignments.
+set "operator_email" as "email@test.com";
+
+# 3) Reusable policies are named prompt bodies.
 policy Preflight = """
 Before sprinting:
 - confirm scope, constraints, and acceptance criteria are explicit
@@ -27,7 +30,7 @@ If a sprint fails:
 Prioritize correctness and unblock path over speed.
 """;
 
-# 3) Rubrics define scoring criteria and optional tiebreakers.
+# 4) Rubrics define scoring criteria and optional tiebreakers.
 rubric MemoRubric {
   criterion "Accuracy" points 5 means "Facts are correct and verifiable.";
   criterion "Clarity" points 3 means "Writing is concise, logically organized, and easy to scan.";
@@ -35,7 +38,7 @@ rubric MemoRubric {
   tiebreakers ["Accuracy", "Clarity"];
 }
 
-# 4) Cadence controls iteration behavior.
+# 5) Cadence controls iteration behavior.
 cadence MemoLoop {
   engine = codex;
   variants = 4;
@@ -44,7 +47,7 @@ cadence MemoLoop {
   keep best 2;
 }
 
-# 5) Create produces an artifact from a prompt and optional named attachments.
+# 6) Create produces an artifact from a prompt and optional named attachments.
 create LaunchMemo from juliet "Write a one-page launch memo for the Q2 release."
 with {
   preflight = Preflight;            # policy: proactive checks before sprinting
@@ -53,21 +56,22 @@ with {
   rubric = MemoRubric;              # rubric
 };
 
-# 5a) Create can also be seeded from one or more source files.
+# 6a) Create can also be seeded from one or more source files.
 create Phase1WebGLFoundation from julietArtifactSourceFiles [
   "../path-to-file/example.md",
   "../path-to-file/notes.md"
 ];
 
-# 6) Extend currently targets '<Artifact>.rubric' with extra guidance.
+# 7) Extend currently targets '<Artifact>.rubric' with extra guidance.
 extend LaunchMemo.rubric with "Add a criterion for risk disclosure quality.";
 
-# 7) Halt can stop execution, optionally with a message.
+# 8) Halt can stop execution, optionally with a message.
 halt "Stop after the first accepted memo.";
 ```
 
 `keep best <int>;` sets the survivor cap per sprint.
 `project` is intentionally runtime-scoped and should be supplied per execution, not in `juliet { ... }`.
+`set "<key>" as "<value>";` defines a top-level global string assignment.
 `criterion "<name>" points <int> means "<definition>";` adds an optional criterion definition.
 `preflight` is preventive (before work starts); `failureTriage` is corrective (after failures).
 
@@ -129,7 +133,8 @@ Current implementation in this repo includes:
 
 ## Linter Checks
 
-- Statement parsing for `juliet`, `policy`, `rubric`, `cadence`, `create`, `extend`, `halt`
+- Statement parsing for `juliet`, `set`, `policy`, `rubric`, `cadence`, `create`, `extend`, `halt`
+- Duplicate global key assignment warnings for `set "<key>" as "<value>";`
 - Invalid/unknown keys in `juliet { ... }` and `create ... with { ... }`
 - Unresolved references (policy/rubric/cadence/artifact)
 - `create ... from julietArtifactSourceFiles ["..."]` source-file list validation

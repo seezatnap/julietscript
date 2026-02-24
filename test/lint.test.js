@@ -19,6 +19,8 @@ juliet {
   engine = codex;
 }
 
+set "operator_email" as "email@test.com";
+
 policy failureTriage = """
 Recover workers and summarize repeated failures.
 """;
@@ -59,6 +61,29 @@ halt "Human review checkpoint.";
     validate: (diagnostics) => {
       assert.strictEqual(countBySeverity(diagnostics, SEVERITY.ERROR), 0);
       assert.strictEqual(countBySeverity(diagnostics, SEVERITY.WARNING), 0);
+    }
+  },
+  {
+    name: "accepts top-level global set assignment",
+    source: `
+set "operator_email" as "email@test.com";
+halt "done";
+`,
+    validate: (diagnostics) => {
+      assert.strictEqual(countBySeverity(diagnostics, SEVERITY.ERROR), 0);
+      assert.strictEqual(countBySeverity(diagnostics, SEVERITY.WARNING), 0);
+    }
+  },
+  {
+    name: "warns on duplicate top-level global key assignment",
+    source: `
+set "operator_email" as "email@test.com";
+set "operator_email" as "ops@test.com";
+`,
+    validate: (diagnostics) => {
+      assert.strictEqual(countBySeverity(diagnostics, SEVERITY.ERROR), 0);
+      const warningMessages = messages(diagnostics).join("\n");
+      assert.match(warningMessages, /Duplicate global key assignment 'operator_email'/);
     }
   },
   {

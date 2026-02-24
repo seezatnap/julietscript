@@ -12,7 +12,7 @@ This documentation focuses on the surface syntax and the mental model. The mecha
 
 JulietScript coordinates a pipeline of work that typically looks like:
 
-1. **Set defaults** (engine, language; project is runtime-scoped)
+1. **Set defaults and globals** (engine, language, top-level key/value assignments; project is runtime-scoped)
 2. **Define reusable policies** (failureTriage, preflight)
 3. **Define reusable evaluation** (rubrics)
 4. **Define a sprint plan** (cadence, variants, sprints, comparison)
@@ -46,11 +46,12 @@ A JulietScript file is a sequence of statements executed **top-to-bottom**.
 Recommended structure:
 
 1. `juliet { ... }` defaults
-2. `policy ...`
-3. `rubric ...`
-4. `cadence ...`
-5. `create ...`
-6. optional `extend ...`, `halt ...`, more `create ...`
+2. `set "<key>" as "<value>";` globals
+3. `policy ...`
+4. `rubric ...`
+5. `cadence ...`
+6. `create ...`
+7. optional `extend ...`, `halt ...`, more `create ...`
 
 ### Identifiers
 
@@ -93,15 +94,16 @@ juliet { engine = codex; }
 
 ---
 
-## The five primitives
+## The six primitives
 
-The language is intentionally small. Everything is built from these five primitives (with “artifact lifecycle” grouped together).
+The language is intentionally small. Everything is built from these six primitives (with “artifact lifecycle” grouped together).
 
 1. `juliet { ... }` — global defaults
-2. `policy Name = """...""";` — reusable playbook text
-3. `rubric Name { ... }` — structured scoring rules
-4. `cadence Name { ... }` — sprint plan + selection strategy
-5. Artifact lifecycle statements — `create`, `extend`, `halt`
+2. `set "<key>" as "<value>";` — top-level global string assignments
+3. `policy Name = """...""";` — reusable playbook text
+4. `rubric Name { ... }` — structured scoring rules
+5. `cadence Name { ... }` — sprint plan + selection strategy
+6. Artifact lifecycle statements — `create`, `extend`, `halt`
 
 Each primitive is documented below.
 
@@ -128,7 +130,19 @@ juliet {
 
 ---
 
-## 2) `policy` — Reusable workflow playbooks
+## 2) `set "<key>" as "<value>";` — Top-level globals
+
+Defines a reusable top-level string value that can be referenced by downstream tooling.
+
+```julietscript
+set "operator_email" as "email@test.com";
+```
+
+Both key and value are quoted strings.
+
+---
+
+## 3) `policy` — Reusable workflow playbooks
 
 A **policy** is a named block of plain-English instructions that can be attached to artifact creation.
 
@@ -155,7 +169,7 @@ If any workers failed:
 
 ---
 
-## 3) `rubric` — Structured quality scoring
+## 4) `rubric` — Structured quality scoring
 
 A **rubric** defines how to score and compare different variants/branches.
 
@@ -180,7 +194,7 @@ rubric qualityCheck {
 
 ---
 
-## 4) `cadence` — Sprint plan + variants strategy
+## 5) `cadence` — Sprint plan + variants strategy
 
 A **cadence** describes how Juliet should iterate: number of sprints, number of variants, and selection rules.
 
@@ -212,7 +226,7 @@ cadence threeVariantsShootout {
 
 ---
 
-## 5) Artifact lifecycle
+## 6) Artifact lifecycle
 
 Artifacts are created, optionally extended, and sometimes gated by a halt for human review.
 
@@ -289,6 +303,7 @@ halt "Human review checkpoint: inspect diffs/tests for MyNewArtifact and MyOther
 ## Execution model (high level)
 
 * Statements are processed in order.
+* `set` defines top-level global string values.
 * `policy`, `rubric`, `cadence` define reusable named objects.
 * `create` triggers an interaction with Juliet that produces an artifact.
 * If a cadence spawns variants:
@@ -321,6 +336,11 @@ juliet {
   engine   = codex;                 # Default engine for all work
   language = "en";                  # All responses must be English
 }
+
+# ============================================================
+# 1a) Top-level globals
+# ============================================================
+set "operator_email" as "email@test.com";
 
 # ============================================================
 # 2) Policies: reusable operator playbooks
