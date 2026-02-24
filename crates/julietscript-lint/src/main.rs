@@ -10,16 +10,29 @@ use serde::{Deserialize, Serialize};
 
 const EMBEDDED_LINTER_SOURCE: &str = include_str!("linter.js");
 const EXAMPLE_SCRIPT: &str = r#"# JulietScript specification example
-# This script is intentionally verbose and annotated so teams can copy/paste
-# from it when bootstrapping new workflows.
+# Reading guide:
+# - Execution is top-to-bottom.
+# - Later blocks may reference earlier named blocks.
+# - `create` blocks are where upstream config is consumed.
 
-# 1) Global runtime defaults.
-#    `project` is intentionally runtime scoped and should not live here.
+# 1) Global runtime defaults (`juliet` block).
+# Purpose: provide baseline engine/runtime settings for this script.
+# Relationship:
+# - Acts as default context for downstream work unless overridden by a local block.
+# - `project` is intentionally runtime-scoped and should NOT be declared here.
+# Keys:
+# - `engine`: default execution backend/model family for this script (e.g. `codex`).
 juliet {
   engine = codex;
 }
 
-# 2) Reusable policy prompt bodies.
+# 2) Preflight policy.
+# Purpose: reusable "before work starts" checklist instructions.
+# Relationship:
+# - Attached downstream via `with { preflight = ... }` in `create` blocks.
+# - Not executed on its own; it is consumed by artifacts that reference it.
+# Keys:
+# - policy name (`PreflightChecklist`): reusable identifier referenced later by `preflight = ...`.
 policy PreflightChecklist = """
 Before sprinting:
 - restate scope and acceptance criteria
@@ -27,10 +40,28 @@ Before sprinting:
 - confirm validation plan before code changes
 """;
 
-# Demonstrates plain quoted strings (block strings above are also valid).
+# 3) Failure triage policy.
+# Purpose: reusable "what to do after a failed attempt" instructions.
+# Relationship:
+# - Attached downstream via `with { failureTriage = ... }`.
+# - Pairs with PreflightChecklist: one is preventive, one is corrective.
+# Note: plain quoted strings and triple-quoted block strings are both valid.
+# Keys:
+# - policy name (`FailureTriage`): reusable identifier referenced later by `failureTriage = ...`.
 policy FailureTriage = "On failure: capture root cause, try one safe recovery, then escalate with evidence.";
 
-# 3) Scoring rubric used by cadence compare actions.
+# 4) Rubric.
+# Purpose: define how outputs should be judged (criteria + point weights + tie resolution).
+# Relationship:
+# - Referenced by cadence (`compare using ShipRubric`) to rank variants.
+# - Also attached in `create ... with { rubric = ShipRubric; }` so each artifact run
+#   explicitly carries its evaluation contract downstream.
+# Keys:
+# - `criterion "<name>" points N means "<definition>"`:
+#   - `<name>`: score dimension label.
+#   - `points N`: weight/maximum points for that dimension.
+#   - `means ...`: plain-language definition of what "good" looks like.
+# - `tiebreakers [...]`: ordered fallback criteria when total scores tie.
 rubric ShipRubric {
   criterion "Correctness" points 5 means "Behavior matches the specification and tests pass.";
   criterion "Safety" points 3 means "Risky changes include rollback guidance and guarded rollout.";
@@ -38,7 +69,20 @@ rubric ShipRubric {
   tiebreakers ["Correctness", "Safety"];
 }
 
-# 4) Cadence controls branching + pruning behavior.
+# 5) Cadence.
+# Purpose: define the search strategy (how many variants, how many sprints, how to prune).
+# Relationship:
+# - `compare using ShipRubric` says which rubric scores candidate variants.
+# - Attached downstream in `create` blocks via `cadence = ShipLoop`.
+# Keys:
+# - `engine`: cadence-level override for which engine runs the generation loop.
+# - `variants = 3`: each active branch spawns 3 candidate variants per sprint.
+# - `sprints = 2`: run 2 iteration rounds total.
+# - `compare using ShipRubric`: score/rank candidates using that rubric.
+# - `keep best 2`: after each sprint, keep only top 2 survivors for next sprint.
+# Practical effect in this example:
+# - Sprint 1: 1 starting branch -> 3 candidates -> keep 2.
+# - Sprint 2: 2 survivors each branch into 3 (2 x 3 = 6) -> keep final best 2.
 cadence ShipLoop {
   engine = codex;
   variants = 3;
@@ -47,13 +91,31 @@ cadence ShipLoop {
   keep best 2;
 }
 
-# 5) Artifact A from source files.
+# 6) Seed artifact from source files.
+# Purpose: ingest existing human-authored documents into the artifact graph.
+# Relationship:
+# - Produces `SourceBrief`, which downstream `create` blocks consume via `using [...]`.
+# Keys:
+# - artifact name (`SourceBrief`): output identifier referenced later in `using`.
+# - `julietArtifactSourceFiles [...]`: explicit input file list used to seed the artifact.
 create SourceBrief from julietArtifactSourceFiles [
   "../docs/product-brief.md",
   "../docs/constraints.md"
 ];
 
-# 6) Artifact B from a prompt and chained dependency on Artifact A.
+# 7) Artifact generated from a prompt, chained to the seed artifact.
+# Purpose: turn source material into an actionable implementation plan.
+# Relationship:
+# - `using [SourceBrief]` means this artifact depends on and consumes SourceBrief.
+# - `with { ... }` wires policies + cadence + rubric into this artifact's run behavior.
+# Keys:
+# - `from juliet """..."""`: prompt used to generate the artifact.
+# - `using [SourceBrief]`: upstream artifact dependencies to include as context.
+# - `with { ... }` attachments:
+#   - `preflight`: policy to run before work starts.
+#   - `failureTriage`: policy used when attempts fail.
+#   - `cadence`: iteration/branching strategy.
+#   - `rubric`: scoring contract used for evaluation/ranking.
 create IterationPlan from juliet """
 Draft an implementation plan with:
 - milestones
@@ -68,7 +130,14 @@ with {
   rubric = ShipRubric;
 };
 
-# 7) Artifact C chains both prior artifacts.
+# 8) Second generated artifact, chained to multiple upstream artifacts.
+# Purpose: produce implementation output (patches) using both context and plan artifacts.
+# Relationship:
+# - `using [SourceBrief, IterationPlan]` demonstrates multi-artifact dependency chaining.
+# - Reuses the same policies/cadence/rubric so evaluation and recovery behavior stay consistent.
+# Keys:
+# - same `from` / `using` / `with` semantics as block 7.
+# - multi-item `using` merges multiple upstream artifacts as generation context.
 create PatchSet from juliet "Produce a patch series implementing the approved plan."
 using [SourceBrief, IterationPlan]
 with {
@@ -78,12 +147,25 @@ with {
   rubric = ShipRubric;
 };
 
-# 8) Extend currently supports only `<Artifact>.rubric`.
+# 9) Extend artifact rubric guidance.
+# Purpose: add extra scoring guidance specific to one artifact after it is defined.
+# Relationship:
+# - Targets an existing artifact (`PatchSet`) and supported target (`.rubric`).
+# - Refines how PatchSet should be judged in downstream evaluation/review.
+# Keys:
+# - `PatchSet.rubric`: extend target (`<Artifact>.rubric` is the supported form).
+# - `with "..."/"""..."""`: additional guidance text appended to rubric intent.
 extend PatchSet.rubric with """
 Add an explicit criterion for migration safety and backward compatibility.
 """;
 
-# 9) Halt can be bare (`halt;`) or include a message.
+# 10) Optional stop point.
+# Purpose: terminate workflow intentionally after the desired artifact state.
+# Relationship:
+# - Ends execution after all prior blocks have been processed.
+# Keys:
+# - `halt;` stops silently.
+# - `halt "message";` stops with an explicit reason/message.
 halt "Stop after the first accepted PatchSet.";
 "#;
 
